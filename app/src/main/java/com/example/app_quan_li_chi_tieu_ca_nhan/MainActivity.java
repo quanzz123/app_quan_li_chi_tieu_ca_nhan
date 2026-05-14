@@ -1,114 +1,96 @@
 package com.example.app_quan_li_chi_tieu_ca_nhan;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import java.util.Arrays;
-import java.util.List;
+import android.util.Log;
+import com.google.firebase.FirebaseApp;
 
 public class MainActivity extends AppCompatActivity {
+
+    private ImageView navHome, navDashboard, navNotifications, navProfile;
+    private final int COLOR_ACTIVE = Color.parseColor("#2563EB");
+    private final int COLOR_INACTIVE = Color.parseColor("#64748B");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+        
+        // Đảm bảo Firebase được khởi tạo
+        if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+            com.google.firebase.FirebaseApp.initializeApp(this);
+        }
+
+        // Kiểm tra nếu chưa đăng nhập thì chuyển sang LoginActivity
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+        // Xử lý System Insets để tránh bị đè bởi navigation bar của thiết bị
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.bottomNavigationContainer), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(0, 0, 0, systemBars.bottom);
             return insets;
         });
 
-        RecyclerView recyclerView = findViewById(R.id.rvTransactions);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(new TransactionAdapter(Arrays.asList(
-                new Transaction("$", "Lương tháng 5", "01/05/2026", "+18.000.000 đ", true),
-                new Transaction("F", "Ăn trưa", "01/05/2026", "-120.000 đ", false),
-                new Transaction("T", "Grab đi làm", "30/04/2026", "-75.000 đ", false),
-                new Transaction("S", "Mua áo sơ mi", "29/04/2026", "-450.000 đ", false),
-                new Transaction("C", "Cà phê với bạn", "28/04/2026", "-65.000 đ", false),
-                new Transaction("B", "Thưởng dự án", "27/04/2026", "+2.500.000 đ", true)
-        )));
+        initViews();
+        setupNavigation();
 
-        findViewById(R.id.fabAdd).setOnClickListener(v ->
-                startActivity(new Intent(this, AddActivity.class))
-        );
+        // Mặc định load màn hình Home (Thanh toán - Ảnh 1)
+        loadFragment(new HomePaymentFragment(), navHome);
+
+        findViewById(R.id.fabAdd).setOnClickListener(v -> {
+            // Logic mở màn hình thêm giao dịch hoặc quét mã
+            Intent intent = new Intent(this, AddActivity.class);
+            startActivity(intent);
+        });
     }
 
-    static class Transaction {
-        final String icon;
-        final String title;
-        final String date;
-        final String amount;
-        final boolean income;
-
-        Transaction(String icon, String title, String date, String amount, boolean income) {
-            this.icon = icon;
-            this.title = title;
-            this.date = date;
-            this.amount = amount;
-            this.income = income;
-        }
+    private void initViews() {
+        navHome = findViewById(R.id.navHome);
+        navDashboard = findViewById(R.id.navDashboard);
+        navNotifications = findViewById(R.id.navNotifications);
+        navProfile = findViewById(R.id.navProfile);
     }
 
-    static class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {
-        private final List<Transaction> transactions;
+    private void setupNavigation() {
+        navHome.setOnClickListener(v -> loadFragment(new HomePaymentFragment(), navHome));
+        navDashboard.setOnClickListener(v -> loadFragment(new DashboardFragment(), navDashboard));
+        navNotifications.setOnClickListener(v -> loadFragment(new TransactionsFragment(), navNotifications));
+        navProfile.setOnClickListener(v -> loadFragment(new ProfileFragment(), navProfile));
+    }
 
-        TransactionAdapter(List<Transaction> transactions) {
-            this.transactions = transactions;
-        }
+    private void loadFragment(Fragment fragment, ImageView activeNav) {
+        // Cập nhật màu sắc các icon điều hướng
+        resetNavColors();
+        activeNav.setImageTintList(ColorStateList.valueOf(COLOR_ACTIVE));
 
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_transaction, parent, false);
-            return new ViewHolder(view);
-        }
+        // Thực hiện chuyển đổi Fragment
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+        transaction.replace(R.id.fragmentContainer, fragment);
+        transaction.commit();
+    }
 
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Transaction item = transactions.get(position);
-            holder.icon.setText(item.icon);
-            holder.title.setText(item.title);
-            holder.date.setText(item.date);
-            holder.amount.setText(item.amount);
-            holder.amount.setTextColor(Color.parseColor(item.income ? "#059669" : "#DC2626"));
-        }
-
-        @Override
-        public int getItemCount() {
-            return transactions.size();
-        }
-
-        static class ViewHolder extends RecyclerView.ViewHolder {
-            final TextView icon;
-            final TextView title;
-            final TextView date;
-            final TextView amount;
-
-            ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                icon = itemView.findViewById(R.id.tvCategoryIcon);
-                title = itemView.findViewById(R.id.tvTitle);
-                date = itemView.findViewById(R.id.tvDate);
-                amount = itemView.findViewById(R.id.tvAmount);
-            }
-        }
+    private void resetNavColors() {
+        navHome.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
+        navDashboard.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
+        navNotifications.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
+        navProfile.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
     }
 }

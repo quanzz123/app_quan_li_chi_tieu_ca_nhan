@@ -135,37 +135,69 @@
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ăn uống" />
+                android:text="Food" />
 
             <com.google.android.material.chip.Chip
-                android:id="@+id/chipTransport"
+                android:id="@+id/chipDrink"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Di chuyển" />
+                android:text="Drinks" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipShopping"
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mua sắm" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipSalary"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Lương" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipOther"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Khác" />
+                android:text="Shopping" />
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/tvAddImage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:text="Ảnh giao dịch (không bắt buộc)"
+        android:textColor="#334155"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/categoryScroll" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardAddImage"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="#F1F5F9"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvAddImage"
+        app:strokeColor="#E2E8F0"
+        app:strokeWidth="1dp">
+
+        <ImageView
+            android:id="@+id/ivTransactionImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="32dp"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_menu_camera"
+            app:tint="#64748B" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <ProgressBar
+        android:id="@+id/imageUploadProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/cardAddImage"
+        app:layout_constraintEnd_toEndOf="@id/cardAddImage"
+        app:layout_constraintStart_toStartOf="@id/cardAddImage"
+        app:layout_constraintTop_toTopOf="@id/cardAddImage" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSave"

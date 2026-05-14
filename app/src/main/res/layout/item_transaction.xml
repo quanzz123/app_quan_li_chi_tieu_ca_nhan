@@ -1,84 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="0dp"
-    app:strokeColor="#E2E8F0"
-    app:strokeWidth="1dp">
+    android:background="?attr/selectableItemBackground"
+    android:paddingVertical="12dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivCategoryIcon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:padding="10dp"
+        android:src="@android:drawable/ic_menu_gallery"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+        app:strokeColor="#F1F5F9"
+        app:strokeWidth="1dp" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:minHeight="76dp"
-        android:padding="14dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#0F172A"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/tvAmount"
+        app:layout_constraintStart_toEndOf="@id/ivCategoryIcon"
+        app:layout_constraintTop_toTopOf="@id/ivCategoryIcon"
+        tools:text="Starbucks Coffee" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/iconContainer"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:cardBackgroundColor="#D1FAE5"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="#64748B"
+        android:textSize="13sp"
+        app:layout_constraintStart_toStartOf="@id/tvTitle"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        tools:text="5 Sep 2021  •  17:02" />
 
-            <TextView
-                android:id="@+id/tvCategoryIcon"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:textColor="#047857"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:text="$" />
-        </com.google.android.material.card.MaterialCardView>
+    <ImageView
+        android:id="@+id/ivHasImage"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_marginStart="8dp"
+        android:src="@android:drawable/ic_menu_gallery"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/tvDate"
+        app:layout_constraintStart_toEndOf="@id/tvDate"
+        app:layout_constraintTop_toTopOf="@id/tvDate"
+        app:tint="#94A3B8"
+        tools:visibility="visible" />
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="12dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="#0F172A"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tvAmount"
-            app:layout_constraintStart_toEndOf="@id/iconContainer"
-            app:layout_constraintTop_toTopOf="@id/iconContainer"
-            tools:text="Ăn trưa" />
+    <TextView
+        android:id="@+id/tvAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#0F172A"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="-163.000 đ" />
 
-        <TextView
-            android:id="@+id/tvDate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginTop="6dp"
-            android:layout_marginEnd="12dp"
-            android:textColor="#64748B"
-            android:textSize="13sp"
-            app:layout_constraintEnd_toStartOf="@id/tvAmount"
-            app:layout_constraintStart_toEndOf="@id/iconContainer"
-            app:layout_constraintTop_toBottomOf="@id/tvTitle"
-            tools:text="01/05/2026" />
 
-        <TextView
-            android:id="@+id/tvAmount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="@id/iconContainer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/iconContainer"
-            tools:text="-120.000 đ"
-            tools:textColor="#DC2626" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

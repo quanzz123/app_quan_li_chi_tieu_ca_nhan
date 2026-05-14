@@ -1,0 +1,22 @@
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="48dp" android:viewportHeight="128" android:viewportWidth="128" android:width="48dp">
+      
+    <path android:fillColor="#F44336" android:fillType="evenOdd" android:pathData="M60,84h8v-8h-8V84zM52,68v8h8v-8H52zM44,84h8v-8h-8V84zM36,68v8h8v-8H36zM28,80.16L36,84v-8h-8V80.16zM20,68l0.33,8H28v-8H20zM36,60h-8v8h8V60zM44,60v8h8v-8H44zM60,60v8h8v-8H60zM68,68v8h8v-8H68zM76,84h8v-8h-8V84zM76,60v8h8v-8H76zM84,68v8h8v-8H84zM92,84l8,-2.67V76h-8V84zM92,60v8h8v-8H92zM108,75.17V68h-8v8L108,75.17zM108,60v-8h-8v8H108zM92,60v-8h-8v8H92zM76,60v-8h-8v8H76zM60,60v-8h-8v8H60zM44,60v-8h-8v8H44zM20,52v8h8v-8H20zM36,44h-8v8h8V44zM52,44h-8v8h8V44zM68,44h-8v8h8V44zM84,44h-8v8h8V44zM100,44h-8v8h8V44z"/>
+      
+    <path android:fillColor="#546E7A" android:pathData="M87.71,8c1.32,0 2.56,0.66 3.3,1.73c1.06,1.54 25.77,38.04 13.67,61.03c-4.91,9.31 -14.6,14.72 -29.63,16.52c-4.02,0.48 -7.04,3.9 -7.04,7.95V104c0,4.42 3.58,8 8.01,8h12.01c2.2,0 4,1.8 4,4s-1.8,4 -4,4H39.98c-2.2,0 -4,-1.8 -4,-4s1.8,-4 4,-4h12.01c4.43,0 8.01,-3.58 8.01,-8v-8.77c0,-4.05 -3.03,-7.46 -7.04,-7.95c-15.02,-1.8 -24.72,-7.22 -29.63,-16.52C11.22,47.77 35.93,11.27 36.98,9.75C37.73,8.66 38.97,8 40.29,8H87.71M87.71,0H40.29c-3.96,0 -7.66,1.95 -9.9,5.21C27.45,9.48 2.15,47.74 16.24,74.49c6.19,11.74 18.25,18.63 35.75,20.74V104H39.98c-6.63,0 -12.01,5.38 -12.01,12s5.38,12 12.01,12h48.03c6.63,0 12.01,-5.38 12.01,-12s-5.38,-12 -12.01,-12H76.01v-8.77c17.5,-2.11 29.56,-9 35.75,-20.74c14.1,-26.75 -11.21,-65.01 -14.14,-69.28C95.37,1.95 91.67,0 87.71,0L87.71,0z"/>
+    
+</vector>

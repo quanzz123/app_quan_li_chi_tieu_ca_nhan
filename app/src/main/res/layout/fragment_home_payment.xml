@@ -81,9 +81,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:orientation="horizontal">
-            <include layout="@layout/layout_action_item" />
-            <include layout="@layout/layout_action_item" />
-            <include layout="@layout/layout_action_item" />
+            <include android:id="@+id/actionTopup" layout="@layout/layout_action_item" />
+            <include android:id="@+id/actionTransfer" layout="@layout/layout_action_item" />
+            <include android:id="@+id/actionScan" layout="@layout/layout_action_item" />
         </LinearLayout>
 
         <!-- Payment List Card -->

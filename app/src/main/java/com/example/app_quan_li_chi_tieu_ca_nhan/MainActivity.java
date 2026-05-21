@@ -55,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
         loadFragment(new HomePaymentFragment(), navHome);
 
         findViewById(R.id.fabAdd).setOnClickListener(v -> {
-            // Logic mở màn hình thêm giao dịch hoặc quét mã
-            Intent intent = new Intent(this, AddActivity.class);
+            // Mở màn hình chụp ảnh giao dịch
+            Intent intent = new Intent(this, CaptureTransactionActivity.class);
             startActivity(intent);
         });
     }

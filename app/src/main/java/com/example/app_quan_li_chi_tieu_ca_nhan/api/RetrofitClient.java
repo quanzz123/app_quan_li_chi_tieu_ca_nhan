@@ -25,4 +25,19 @@ public class RetrofitClient {
         }
         return retrofit.create(ImgBBApi.class);
     }
+
+    public static LabelApi getLabelApi() {
+        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(logging)
+                .build();
+
+        Retrofit labelRetrofit = new Retrofit.Builder()
+                .baseUrl("http://192.168.1.108:8000/") // Thay thành IP máy tính hoặc Ngrok nếu dùng thiết bị thật
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
+        return labelRetrofit.create(LabelApi.class);
+    }
 }

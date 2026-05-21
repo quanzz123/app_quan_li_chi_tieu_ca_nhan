@@ -17,6 +17,7 @@ import com.example.app_quan_li_chi_tieu_ca_nhan.models.ServiceItem;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.widget.ImageView;
 import android.widget.TextView;
 import com.example.app_quan_li_chi_tieu_ca_nhan.models.Balance;
 import com.example.app_quan_li_chi_tieu_ca_nhan.utils.CurrencyUtils;
@@ -41,7 +42,6 @@ public class HomePaymentFragment extends Fragment {
         tvHomeBalance = view.findViewById(R.id.tvHomeBalance);
 
         rvServices = view.findViewById(R.id.rvServices);
-        // 3 columns as in the previous GridLayout
         rvServices.setLayoutManager(new GridLayoutManager(getContext(), 3));
 
         adapter = new ServiceAdapter(getDummyServices(), service -> {
@@ -51,9 +51,30 @@ public class HomePaymentFragment extends Fragment {
         });
         rvServices.setAdapter(adapter);
 
+        setupQuickActions(view);
         listenForBalance();
 
         return view;
+    }
+
+    private void setupQuickActions(View view) {
+        View actionTopup = view.findViewById(R.id.actionTopup);
+        ((TextView) actionTopup.findViewById(R.id.tvActionName)).setText("Topup");
+        ((ImageView) actionTopup.findViewById(R.id.ivActionIcon)).setImageResource(android.R.drawable.ic_input_add);
+        actionTopup.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), TopupActivity.class));
+        });
+
+        View actionTransfer = view.findViewById(R.id.actionTransfer);
+        ((TextView) actionTransfer.findViewById(R.id.tvActionName)).setText("Transfer");
+        ((ImageView) actionTransfer.findViewById(R.id.ivActionIcon)).setImageResource(android.R.drawable.ic_menu_send);
+
+        View actionScan = view.findViewById(R.id.actionScan);
+        ((TextView) actionScan.findViewById(R.id.tvActionName)).setText("Scan");
+        ((ImageView) actionScan.findViewById(R.id.ivActionIcon)).setImageResource(android.R.drawable.ic_menu_camera);
+        actionScan.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), CaptureTransactionActivity.class));
+        });
     }
 
     private void listenForBalance() {

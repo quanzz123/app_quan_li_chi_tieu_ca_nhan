@@ -59,7 +59,7 @@ public class TopupActivity extends AppCompatActivity {
     }
 
     private void performTopup() {
-        String amountStr = etTopupAmount.getText().toString().trim();
+        String amountStr = etTopupAmount.getText().toString().trim().replace(".", "");
         if (amountStr.isEmpty()) {
             etTopupAmount.setError("Vui lòng nhập số tiền");
             return;
@@ -90,7 +90,7 @@ public class TopupActivity extends AppCompatActivity {
             txData.put("title", "Nạp tiền vào tài khoản");
             txData.put("categoryName", "Topup");
             txData.put("amount", amount);
-            txData.put("date", "Hôm nay"); // Có thể dùng DateFormat để lấy ngày thực
+            txData.put("date", new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date()));
             txData.put("timestamp", System.currentTimeMillis());
             txData.put("isExpense", false);
             transaction.set(txRef, txData);
@@ -99,6 +99,10 @@ public class TopupActivity extends AppCompatActivity {
         }).addOnSuccessListener(aVoid -> {
             progressBar.setVisibility(View.GONE);
             Toast.makeText(TopupActivity.this, "Nạp tiền thành công!", Toast.LENGTH_SHORT).show();
+            android.content.Intent intent = new android.content.Intent(TopupActivity.this, MainActivity.class);
+            intent.putExtra("select_tab", "dashboard");
+            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
             finish();
         }).addOnFailureListener(e -> {
             progressBar.setVisibility(View.GONE);
@@ -123,6 +127,10 @@ public class TopupActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(TopupActivity.this, "Nạp tiền thành công!", Toast.LENGTH_SHORT).show();
+                    android.content.Intent intent = new android.content.Intent(TopupActivity.this, MainActivity.class);
+                    intent.putExtra("select_tab", "dashboard");
+                    intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
                     finish();
                 })
                 .addOnFailureListener(e -> {

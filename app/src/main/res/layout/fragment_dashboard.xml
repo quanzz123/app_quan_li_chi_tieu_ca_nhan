@@ -48,7 +48,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Your Balance"
+                android:text="Số dư"
                 android:textColor="#64748B"
                 android:textSize="14sp" />
 
@@ -69,9 +69,10 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
+                    android:id="@+id/tvHistoryText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="History"
+                    android:text="Lịch sử"
                     android:textColor="#2563EB"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="@id/tvBalanceAmount"
@@ -92,7 +93,7 @@
                     android:layout_height="64dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="Transfer"
+                    android:text="Lịch sử"
                     android:textAllCaps="false"
                     android:textColor="#FFFFFF"
                     app:backgroundTint="#2563EB"
@@ -105,7 +106,7 @@
                     android:layout_height="64dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    android:text="Topup"
+                    android:text="Nap tiền"
                     android:textAllCaps="false"
                     android:textColor="#FFFFFF"
                     app:backgroundTint="#EF4444"
@@ -122,7 +123,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Statistics"
+                    android:text="Thống kê"
                     android:textColor="#0F172A"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -130,9 +131,10 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
+                    android:id="@+id/tvMoreStatistics"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="See More"
+                    android:text="xem thêm"
                     android:textColor="#2563EB"
                     android:textSize="13sp"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -140,22 +142,39 @@
                     app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Placeholder for Chart -->
+            <!-- Container for Chart -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="250dp"
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="#F8FAFC"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
-                <ImageView
+                
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="16dp"
-                    android:scaleType="fitCenter"
-                    android:src="@android:drawable/ic_menu_report_image"
-                    app:tint="#CBD5E1"
-                    android:contentDescription="Chart" />
+                    android:padding="16dp">
+                    
+                    <TextView
+                        android:id="@+id/tvNoData"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="Chưa có dữ liệu thống kê chi tiêu"
+                        android:textColor="#94A3B8"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/lnChartContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="bottom"
+                        android:baselineAligned="false">
+                    </LinearLayout>
+                </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Statistics Tabs -->
@@ -181,7 +200,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Services"
+                    android:text="Dịch vụ"
                     android:textColor="#0F172A"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -191,7 +210,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="View all"
+                    android:text="Xem thêm"
                     android:textColor="#2563EB"
                     android:textSize="13sp"
                     app:layout_constraintBottom_toBottomOf="parent"

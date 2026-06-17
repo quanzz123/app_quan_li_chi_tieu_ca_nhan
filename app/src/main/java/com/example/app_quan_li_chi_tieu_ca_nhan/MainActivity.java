@@ -51,8 +51,14 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         setupNavigation();
 
-        // Mặc định load màn hình Home (Thanh toán - Ảnh 1)
-        loadFragment(new HomePaymentFragment(), navHome);
+        // Kiểm tra xem có yêu cầu mở tab Dashboard không
+        String selectTab = getIntent().getStringExtra("select_tab");
+        if ("dashboard".equals(selectTab)) {
+            loadFragment(new DashboardFragment(), navDashboard);
+        } else {
+            // Mặc định load màn hình Home (Thanh toán - Ảnh 1)
+            loadFragment(new HomePaymentFragment(), navHome);
+        }
 
         findViewById(R.id.fabAdd).setOnClickListener(v -> {
             // Mở màn hình chụp ảnh giao dịch
@@ -92,5 +98,15 @@ public class MainActivity extends AppCompatActivity {
         navDashboard.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
         navNotifications.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
         navProfile.setImageTintList(ColorStateList.valueOf(COLOR_INACTIVE));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String selectTab = intent.getStringExtra("select_tab");
+        if ("dashboard".equals(selectTab)) {
+            loadFragment(new DashboardFragment(), navDashboard);
+        }
     }
 }

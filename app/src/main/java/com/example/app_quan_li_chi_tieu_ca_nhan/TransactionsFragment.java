@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.util.Log;
+import android.widget.TextView;
 
 public class TransactionsFragment extends Fragment {
 
@@ -30,6 +31,7 @@ public class TransactionsFragment extends Fragment {
     private RecyclerView rvAllTransactions;
     private TransactionAdapter adapter;
     private List<Transaction> transactionList;
+    private TextView tvWelcome;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
@@ -42,6 +44,7 @@ public class TransactionsFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         transactionList = new ArrayList<>();
 
+        tvWelcome = view.findViewById(R.id.tvWelcome);
         rvAllTransactions = view.findViewById(R.id.rvAllTransactions);
         rvAllTransactions.setLayoutManager(new LinearLayoutManager(getContext()));
 
@@ -52,9 +55,26 @@ public class TransactionsFragment extends Fragment {
         });
         rvAllTransactions.setAdapter(adapter);
 
+        fetchUserData();
         loadTransactions();
 
         return view;
+    }
+
+    private void fetchUserData() {
+        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+        if (userId == null) return;
+
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String fullName = documentSnapshot.getString("fullName");
+                        if (fullName != null && !fullName.isEmpty() && tvWelcome != null) {
+                            tvWelcome.setText("Xin chào, " + fullName);
+                        }
+                    }
+                });
     }
 
     private void loadTransactions() {

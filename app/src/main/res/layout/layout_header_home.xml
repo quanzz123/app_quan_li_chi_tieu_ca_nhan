@@ -20,7 +20,7 @@
         android:id="@+id/tvGreeting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Good Morning"
+        android:text="Chào Mừng Bạn quay trở lại"
         android:textColor="#64748B"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"

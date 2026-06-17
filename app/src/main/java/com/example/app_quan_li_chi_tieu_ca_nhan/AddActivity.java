@@ -90,6 +90,10 @@ public class AddActivity extends AppCompatActivity {
         edtTitle = findViewById(R.id.edtTitle);
         edtAmount = findViewById(R.id.edtAmount);
         edtDate = findViewById(R.id.edtDate);
+        
+        // Gán ngày hiện tại làm mặc định
+        String currentDate = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
+        edtDate.setText(currentDate);
         chipCategories = findViewById(R.id.chipCategories);
         ivTransactionImage = findViewById(R.id.ivTransactionImage);
         imageUploadProgressBar = findViewById(R.id.imageUploadProgressBar);

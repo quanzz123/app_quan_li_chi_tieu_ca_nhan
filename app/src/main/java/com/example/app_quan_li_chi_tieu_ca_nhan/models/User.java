@@ -4,6 +4,7 @@ public class User {
     private String fullName;
     private String email;
     private String userId;
+    private String defaultCurrency = "VND"; // Default currency for backward compatibility
 
     public User() {
     }
@@ -12,6 +13,14 @@ public class User {
         this.fullName = fullName;
         this.email = email;
         this.userId = userId;
+        this.defaultCurrency = "VND";
+    }
+
+    public User(String fullName, String email, String userId, String defaultCurrency) {
+        this.fullName = fullName;
+        this.email = email;
+        this.userId = userId;
+        this.defaultCurrency = defaultCurrency;
     }
 
     public String getFullName() {
@@ -37,4 +46,13 @@ public class User {
     public void setUserId(String userId) {
         this.userId = userId;
     }
+
+    public String getDefaultCurrency() {
+        return defaultCurrency;
+    }
+
+    public void setDefaultCurrency(String defaultCurrency) {
+        this.defaultCurrency = defaultCurrency;
+    }
 }
+

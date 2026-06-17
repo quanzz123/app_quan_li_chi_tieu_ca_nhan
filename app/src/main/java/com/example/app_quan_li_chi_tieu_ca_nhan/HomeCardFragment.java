@@ -24,6 +24,10 @@ import java.util.List;
 
 import android.util.Log;
 
+/**
+ * Fragment hiển thị màn hình chính dạng Thẻ (Card Home).
+ * Tải và hiển thị danh sách rút gọn gồm 5 giao dịch gần nhất của người dùng.
+ */
 public class HomeCardFragment extends Fragment {
 
     private static final String TAG = "HomeCardFragment";
@@ -36,6 +40,7 @@ public class HomeCardFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Nạp layout XML cho Fragment Card Home
         View view = inflater.inflate(R.layout.fragment_home_card, container, false);
 
         db = FirebaseFirestore.getInstance();
@@ -45,6 +50,7 @@ public class HomeCardFragment extends Fragment {
         rvTransactions = view.findViewById(R.id.rvTransactions);
         rvTransactions.setLayoutManager(new LinearLayoutManager(getContext()));
 
+        // Thiết lập Adapter hiển thị giao dịch kèm sự kiện click xem chi tiết
         adapter = new TransactionAdapter(transactionList, transaction -> {
             Intent intent = new Intent(getActivity(), TransactionDetailActivity.class);
             intent.putExtra("transaction", transaction);
@@ -52,11 +58,15 @@ public class HomeCardFragment extends Fragment {
         });
         rvTransactions.setAdapter(adapter);
 
+        // Tải 5 giao dịch gần đây nhất
         loadRecentTransactions();
 
         return view;
     }
 
+    /**
+     * Tải và lắng nghe 5 giao dịch gần đây nhất của người dùng hiện tại từ Firestore.
+     */
     private void loadRecentTransactions() {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
         if (userId == null) return;
@@ -69,6 +79,7 @@ public class HomeCardFragment extends Fragment {
                     if (error != null) {
                         Log.e(TAG, "Lỗi Firestore: " + error.getMessage(), error);
                         String msg = error.getMessage();
+                        // Hướng dẫn nếu thiếu Index cho truy vấn orderBy + where
                         if (msg != null && msg.contains("index")) {
                             Toast.makeText(getContext(), "Cần tạo Index trên Firebase. Kiểm tra Logcat!", Toast.LENGTH_LONG).show();
                         } else {

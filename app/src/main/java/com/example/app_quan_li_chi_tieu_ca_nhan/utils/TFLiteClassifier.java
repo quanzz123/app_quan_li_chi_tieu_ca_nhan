@@ -17,18 +17,32 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Lớp hỗ trợ phân loại hình ảnh giao dịch (ảnh chụp hóa đơn, sản phẩm)
+ * sử dụng mô hình học máy TensorFlow Lite (.tflite) trên Android.
+ */
 public class TFLiteClassifier {
 
     private final Interpreter interpreter;
     private final List<String> labels;
-    private static final int INPUT_SIZE = 224;
+    private static final int INPUT_SIZE = 224; // Kích thước ảnh đầu vào yêu cầu bởi mô hình (224x224)
 
+    /**
+     * Khởi tạo bộ phân loại TensorFlow Lite.
+     * Nạp tệp mô hình và danh sách các nhãn phân loại từ thư mục assets.
+     *
+     * @param context Context của ứng dụng
+     * @throws IOException Nếu không thể mở tệp mô hình hoặc tệp nhãn
+     */
     public TFLiteClassifier(Context context) throws IOException {
         // Nạp mô hình TFLite và danh sách nhãn từ assets
         interpreter = new Interpreter(loadModelFile(context, "model.tflite"));
         labels = loadLabelList(context, "labels.txt");
     }
 
+    /**
+     * Đọc tệp mô hình .tflite từ assets dưới dạng MappedByteBuffer để tối ưu hóa bộ nhớ.
+     */
     private MappedByteBuffer loadModelFile(Context context, String modelPath) throws IOException {
         AssetFileDescriptor fileDescriptor = context.getAssets().openFd(modelPath);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
@@ -38,6 +52,9 @@ public class TFLiteClassifier {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
+    /**
+     * Đọc danh sách nhãn phân loại từ file text trong assets (mỗi dòng chứa một nhãn).
+     */
     private List<String> loadLabelList(Context context, String labelPath) throws IOException {
         List<String> labelList = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open(labelPath)))) {
@@ -51,6 +68,12 @@ public class TFLiteClassifier {
         return labelList;
     }
 
+    /**
+     * Thực hiện phân loại đối tượng từ hình ảnh Bitmap truyền vào.
+     *
+     * @param bitmap Ảnh chụp cần phân loại
+     * @return Tên nhãn phân loại có độ tin cậy cao nhất (đã viết hoa chữ cái đầu), hoặc "Khác" nếu thất bại
+     */
     public String classifyImage(Bitmap bitmap) {
         if (interpreter == null || labels.isEmpty()) {
             return "Khác";
@@ -66,7 +89,7 @@ public class TFLiteClassifier {
         int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
         resizedBitmap.getPixels(intValues, 0, resizedBitmap.getWidth(), 0, 0, resizedBitmap.getWidth(), resizedBitmap.getHeight());
 
-        // 3. Chuẩn hóa pixel ảnh và ghi vào ByteBuffer (MobileNetV2 scale về [-1, 1])
+        // 3. Chuẩn hóa pixel ảnh và ghi vào ByteBuffer (MobileNetV2 scale về dải [-1, 1])
         int pixel = 0;
         for (int i = 0; i < INPUT_SIZE; ++i) {
             for (int j = 0; j < INPUT_SIZE; ++j) {
@@ -78,10 +101,10 @@ public class TFLiteClassifier {
             }
         }
 
-        // 4. Chuẩn bị mảng đầu ra: 1 dòng * 3 lớp (drinks, food, shopping)
+        // 4. Chuẩn bị mảng đầu ra: 1 dòng * N lớp phân loại (ví dụ: drinks, food, shopping)
         float[][] output = new float[1][labels.size()];
 
-        // 5. Chạy suy luận
+        // 5. Chạy suy luận với interpreter của TensorFlow Lite
         interpreter.run(inputBuffer, output);
 
         // 6. Tìm index có xác suất lớn nhất
@@ -105,6 +128,9 @@ public class TFLiteClassifier {
         return category;
     }
 
+    /**
+     * Giải phóng tài nguyên của Interpreter TFLite khi không còn sử dụng.
+     */
     public void close() {
         if (interpreter != null) {
             interpreter.close();

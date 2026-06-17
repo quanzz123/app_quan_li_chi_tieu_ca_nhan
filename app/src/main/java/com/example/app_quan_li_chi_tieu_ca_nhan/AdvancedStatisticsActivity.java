@@ -30,6 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Activity hiển thị báo cáo thống kê chi tiết (Advanced Statistics).
+ * Các chức năng chính:
+ * 1. Lọc giao dịch theo các khoảng thời gian: Hôm nay, Tuần này, Tháng này, Tất cả.
+ * 2. Phân tích thống kê tổng thu nhập và tổng chi tiêu theo khoảng thời gian được chọn.
+ * 3. Vẽ biểu đồ phân rã danh mục chi tiêu (Category Breakdown) bằng thanh tiến trình tự thiết kế động.
+ * 4. Liệt kê danh sách các giao dịch thuộc bộ lọc.
+ */
 public class AdvancedStatisticsActivity extends AppCompatActivity {
 
     private Toolbar toolbar;
@@ -44,6 +52,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
     private List<Transaction> filteredTransactions = new ArrayList<>();
     private TransactionAdapter adapter;
 
+    // Định nghĩa ID tương ứng các nút lọc thời gian dạng Chip
     private static final int FILTER_TODAY = R.id.chipToday;
     private static final int FILTER_WEEK = R.id.chipWeek;
     private static final int FILTER_MONTH = R.id.chipMonth;
@@ -103,6 +112,9 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Tải danh sách tất cả giao dịch của người dùng hiện tại từ Firestore.
+     */
     private void loadTransactions() {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
         if (userId == null) {
@@ -127,12 +139,18 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
                                 allTransactions.add(tx);
                             }
                         }
-                        // Sau khi load xong dữ liệu, áp dụng bộ lọc hiện tại
+                        // Sau khi load xong toàn bộ dữ liệu, áp dụng bộ lọc hiện đang chọn
                         applyFilter(cgTimeFilter.getCheckedChipId());
                     }
                 });
     }
 
+    /**
+     * Áp dụng bộ lọc thời gian để lọc giao dịch, tổng hợp doanh thu/chi tiêu,
+     * vẽ biểu đồ cột tỷ lệ và cập nhật RecyclerView.
+     *
+     * @param checkedChipId ID của Chip thời gian đang chọn
+     */
     private void applyFilter(int checkedChipId) {
         filteredTransactions.clear();
 
@@ -145,6 +163,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
 
+        // Xác định mốc thời gian tối thiểu của bộ lọc
         if (checkedChipId == FILTER_TODAY) {
             filterStartTime = cal.getTimeInMillis();
         } else if (checkedChipId == FILTER_WEEK) {
@@ -154,7 +173,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             cal.set(Calendar.DAY_OF_MONTH, 1);
             filterStartTime = cal.getTimeInMillis();
         } else {
-            // FILTER_ALL
+            // FILTER_ALL: không giới hạn
             filterStartTime = 0;
         }
 
@@ -162,35 +181,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
         double totalIncome = 0;
         Map<String, Double> categoryExpenses = new HashMap<>();
 
-        // Duyệt qua tất cả giao dịch để lọc
-        for (Transaction tx : allTransactions) {
-            // Firestore lưu timestamp là trường "timestamp" (Long)
-            // Lấy ra timestamp của giao dịch. Nếu bằng 0 thì lấy System.currentTimeMillis() tạm
-            long txTimestamp = now;
-            try {
-                // Kiểm tra trực tiếp vì Firebase map qua toObject
-                // Nếu data cũ không có timestamp thì có thể xem xét qua date
-            } catch (Exception e) {}
-
-            // Giả định đối tượng Transaction có lưu trữ timestamp hoặc chúng ta query được từ doc.
-            // Để an toàn, chúng ta lấy timestamp đã có trong model (nếu có trường này).
-            // Hãy kiểm tra trong model Transaction.java xem có timestamp không.
-            // Đợi đã, lúc nãy chúng ta xem Transaction.java:
-            // Nó chỉ có: title, categoryName, date, amount, iconRes, isExpense, imageUrl.
-            // Ồ! Transaction.java không có trường timestamp trong model!
-            // Nhưng trong Firestore lúc lưu chúng ta thấy: txData.put("timestamp", System.currentTimeMillis());
-            // Vì vậy, Transaction.java có thể không ánh xạ trường này do thiếu getter/setter,
-            // hoặc nó thực chất được lưu trên Firestore nhưng Class Transaction không có field này.
-            // Khoan đã! Hãy mở lại code lưu giao dịch lúc nãy:
-            // "txData.put("timestamp", System.currentTimeMillis());"
-            // Và trong TransactionDetailActivity.java nó chỉ hiển thị ngày (date).
-            // Nếu Transaction.java không có field timestamp, làm sao chúng ta lọc theo thời gian?
-            // Chúng ta có thể lọc dựa vào trường `date` (định dạng dd/MM/yyyy).
-            // Hoặc chúng ta có thể parse chuỗi ngày `date` thành Date để đối chiếu.
-            // Điều này rất an toàn vì định dạng ngày luôn là "dd/MM/yyyy".
-        }
-
-        // Hãy viết helper để chuyển đổi chuỗi "dd/MM/yyyy" thành timestamp để lọc:
+        // Sử dụng Helper SimpleDateFormat để parse chuỗi ngày "dd/MM/yyyy" thành timestamp để so sánh
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
 
         for (Transaction tx : allTransactions) {
@@ -206,7 +197,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
                 txTime = now;
             }
 
-            // Đối chiếu thời gian lọc
+            // Đối chiếu xem giao dịch có nằm trong mốc thời gian lọc hay không
             if (checkedChipId == FILTER_ALL || txTime >= filterStartTime) {
                 filteredTransactions.add(tx);
 
@@ -227,7 +218,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
         tvTotalExpense.setText(CurrencyUtils.formatVND(totalExpense));
         tvTotalIncome.setText(CurrencyUtils.formatVND(totalIncome));
 
-        // Cập nhật danh sách giao dịch
+        // Cập nhật danh sách giao dịch hiển thị
         adapter.notifyDataSetChanged();
         if (filteredTransactions.isEmpty()) {
             tvNoTransactions.setVisibility(View.VISIBLE);
@@ -237,12 +228,18 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             rvFilteredTransactions.setVisibility(View.VISIBLE);
         }
 
-        // Cập nhật biểu đồ danh mục (Category Breakdown)
+        // Dựng lại biểu đồ phân rã phần trăm danh mục chi tiêu (Category Breakdown)
         updateCategoryBreakdown(categoryExpenses, totalExpense);
     }
 
+    /**
+     * Dựng giao diện các thanh phần trăm chi tiêu cho từng danh mục một cách động.
+     *
+     * @param categoryExpenses Map chứa tên danh mục và tổng chi tiêu của danh mục đó
+     * @param totalExpense Tổng toàn bộ chi tiêu thuộc bộ lọc
+     */
     private void updateCategoryBreakdown(Map<String, Double> categoryExpenses, double totalExpense) {
-        lnCategoryBreakdown.removeAllViews();
+        lnCategoryBreakdown.removeAllViews(); // Xóa sạch giao diện cũ trước khi vẽ lại
 
         if (categoryExpenses.isEmpty() || totalExpense <= 0) {
             tvNoCategoryData.setVisibility(View.VISIBLE);
@@ -251,7 +248,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             tvNoCategoryData.setVisibility(View.GONE);
         }
 
-        // Định nghĩa bảng màu sắc danh mục
+        // Bảng màu cố định cho các danh mục tiêu biểu
         Map<String, String> categoryColors = new HashMap<>();
         categoryColors.put("Drinks", "#3B82F6");      // Xanh dương
         categoryColors.put("Food", "#F59E0B");        // Cam/Vàng
@@ -274,14 +271,14 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             itemParams.setMargins(0, 0, 0, Math.round(16 * density));
             itemLayout.setLayoutParams(itemParams);
 
-            // 2. Tạo Layout ngang chứa Tên danh mục và Số tiền + %
+            // 2. Tạo Layout ngang chứa Tên danh mục và Số tiền + % tương ứng bên phải
             LinearLayout textLayout = new LinearLayout(this);
             textLayout.setOrientation(LinearLayout.HORIZONTAL);
             LinearLayout.LayoutParams textLayoutParams = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             textLayout.setLayoutParams(textLayoutParams);
 
-            // Tên danh mục
+            // Text tên danh mục
             TextView tvCatName = new TextView(this);
             tvCatName.setText(category);
             tvCatName.setTextColor(Color.parseColor("#0F172A"));
@@ -292,7 +289,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             tvCatName.setLayoutParams(catNameParams);
             textLayout.addView(tvCatName);
 
-            // Số tiền và phần trăm
+            // Text giá trị tiền tệ + % (ví dụ: "50.000 đ (25%)")
             TextView tvCatValue = new TextView(this);
             String valueText = String.format(java.util.Locale.getDefault(), "%s (%.1f%%)", 
                     CurrencyUtils.formatVND(amount), percentage);
@@ -307,8 +304,8 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
 
             itemLayout.addView(textLayout);
 
-            // 3. Tạo thanh ProgressBar ngang tự chế bằng CardView/Frame/Views
-            // Lớp nền (Track)
+            // 3. Tạo thanh tiến trình ngang tự chế bằng cách xếp chồng các View con
+            // Tạo thanh nền màu xám nhạt (Track)
             LinearLayout trackView = new LinearLayout(this);
             trackView.setOrientation(LinearLayout.HORIZONTAL);
             LinearLayout.LayoutParams trackParams = new LinearLayout.LayoutParams(
@@ -316,20 +313,19 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             trackParams.setMargins(0, Math.round(8 * density), 0, 0);
             trackView.setLayoutParams(trackParams);
 
-            // Thiết lập bo góc và màu xám nhạt cho track
+            // Thiết lập bo góc 4dp và màu xám cho thanh nền
             GradientDrawable trackBg = new GradientDrawable();
             trackBg.setColor(Color.parseColor("#F1F5F9"));
             trackBg.setCornerRadius(Math.round(4 * density));
             trackView.setBackground(trackBg);
 
-            // Phần thanh hiển thị tiến trình (Progress Bar)
+            // Tạo phần thanh tiến trình có chiều rộng chiếm tỷ lệ phần trăm tương ứng
             View progressView = new View(this);
-            // Chiều rộng tính theo phần trăm
             LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.MATCH_PARENT, (float) (percentage / 100.0));
             progressView.setLayoutParams(progressParams);
 
-            // Màu của danh mục
+            // Thiết lập màu sắc và bo góc cho thanh tiến trình
             GradientDrawable progressBg = new GradientDrawable();
             String colorHex = categoryColors.getOrDefault(category, "#2563EB");
             progressBg.setColor(Color.parseColor(colorHex));
@@ -337,7 +333,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
             progressView.setBackground(progressBg);
             trackView.addView(progressView);
 
-            // Spacer đệm cho phần trống còn lại bên phải để không bị tràn cột
+            // Tạo spacer trống chiếm khoảng trống còn lại bên phải (100% - percentage)
             View spacerView = new View(this);
             LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.MATCH_PARENT, (float) ((100.0 - percentage) / 100.0));
@@ -346,6 +342,7 @@ public class AdvancedStatisticsActivity extends AppCompatActivity {
 
             itemLayout.addView(trackView);
 
+            // Add dòng thống kê danh mục hoàn thiện vào view container
             lnCategoryBreakdown.addView(itemLayout);
         }
     }

@@ -23,6 +23,11 @@ import com.example.app_quan_li_chi_tieu_ca_nhan.utils.CurrencyUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * Fragment hiển thị màn hình Thống kê (Dashboard).
+ * Tự động đồng bộ số dư khả dụng, vẽ biểu đồ hình cột thống kê chi tiết chi tiêu
+ * phân loại theo từng nhóm danh mục như Thực phẩm, Mua sắm, v.v.
+ */
 public class DashboardFragment extends Fragment {
 
     private RecyclerView rvDashboardServices;
@@ -36,16 +41,18 @@ public class DashboardFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Nạp layout XML cho Fragment Dashboard
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
         tvBalanceAmount = view.findViewById(R.id.tvBalanceAmount);
         
-        // Cấu hình các View cho biểu đồ thống kê
+        // Cấu hình các thành phần vẽ biểu đồ thống kê
         lnChartContainer = view.findViewById(R.id.lnChartContainer);
         tvNoData = view.findViewById(R.id.tvNoData);
 
+        // Khởi tạo RecyclerView danh mục dịch vụ
         rvDashboardServices = view.findViewById(R.id.rvDashboardServices);
         rvDashboardServices.setLayoutManager(new GridLayoutManager(getContext(), 3));
 
@@ -56,14 +63,17 @@ public class DashboardFragment extends Fragment {
         });
         rvDashboardServices.setAdapter(adapter);
 
+        // Nút chuyển hướng nạp tiền
         view.findViewById(R.id.btnTopup).setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), TopupActivity.class));
         });
 
+        // Liên kết chuyển hướng sang xem thống kê chi tiết
         view.findViewById(R.id.tvMoreStatistics).setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), AdvancedStatisticsActivity.class));
         });
 
+        // Nút xem lịch sử nạp tiền
         view.findViewById(R.id.btnTransfer).setOnClickListener(v -> {
             startActivity(new Intent(getActivity(), TopupHistoryActivity.class));
         });
@@ -72,12 +82,16 @@ public class DashboardFragment extends Fragment {
             startActivity(new Intent(getActivity(), TopupHistoryActivity.class));
         });
 
+        // Đăng ký lắng nghe biến động số dư và danh sách giao dịch
         listenForBalance();
         listenForTransactions();
 
         return view;
     }
 
+    /**
+     * Lắng nghe biến động số dư hiện tại từ Firestore và hiển thị lên UI.
+     */
     private void listenForBalance() {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
         if (userId == null) return;
@@ -93,6 +107,9 @@ public class DashboardFragment extends Fragment {
                 });
     }
 
+    /**
+     * Lắng nghe toàn bộ giao dịch của người dùng hiện tại để vẽ biểu đồ thống kê.
+     */
     private void listenForTransactions() {
         String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
         if (userId == null) return;
@@ -112,14 +129,20 @@ public class DashboardFragment extends Fragment {
                                 transactions.add(tx);
                             }
                         }
+                        // Tiến hành dựng biểu đồ cột động
                         updateChart(transactions);
                     }
                 });
     }
 
+    /**
+     * Tạo và vẽ các cột biểu đồ động dựa trên số tiền chi tiêu của từng danh mục.
+     *
+     * @param transactions Danh sách giao dịch cần vẽ biểu đồ
+     */
     private void updateChart(List<com.example.app_quan_li_chi_tieu_ca_nhan.models.Transaction> transactions) {
         if (lnChartContainer == null) return;
-        lnChartContainer.removeAllViews();
+        lnChartContainer.removeAllViews(); // Reset lại biểu đồ cũ
 
         // 1. Phân nhóm chi tiêu theo danh mục (chỉ thống kê giao dịch là chi tiêu: isExpense = true)
         java.util.Map<String, Double> categoryExpenses = new java.util.HashMap<>();
@@ -133,6 +156,7 @@ public class DashboardFragment extends Fragment {
             }
         }
 
+        // Nếu không có dữ liệu chi tiêu nào, hiển thị text thông báo
         if (categoryExpenses.isEmpty()) {
             tvNoData.setVisibility(View.VISIBLE);
             return;
@@ -140,7 +164,7 @@ public class DashboardFragment extends Fragment {
             tvNoData.setVisibility(View.GONE);
         }
 
-        // 2. Tìm giá trị chi tiêu lớn nhất để làm mốc tỷ lệ chiều cao của cột
+        // 2. Tìm giá trị chi tiêu lớn nhất để làm mốc tỷ lệ chiều cao của cột (đạt chiều cao tối đa)
         double maxExpense = 0;
         for (double amt : categoryExpenses.values()) {
             if (amt > maxExpense) {
@@ -165,10 +189,10 @@ public class DashboardFragment extends Fragment {
             String category = entry.getKey();
             double amount = entry.getValue();
 
-            // Tính chiều cao cột tỉ lệ thuận với số tiền chi tiêu
+            // Tính chiều cao cột tỉ lệ thuận với số tiền chi tiêu so với mốc maxExpense
             int barHeightPx = maxExpense > 0 ? (int) ((amount / maxExpense) * maxBarHeightPx) : 0;
             if (barHeightPx < Math.round(10 * density)) {
-                barHeightPx = Math.round(10 * density); // Chiều cao tối thiểu 10dp để cột vẫn hiển thị
+                barHeightPx = Math.round(10 * density); // Chiều cao tối thiểu 10dp để cột vẫn nhìn thấy được
             }
 
             // Tạo layout dọc cho từng cột biểu đồ
@@ -177,10 +201,10 @@ public class DashboardFragment extends Fragment {
             colLayout.setGravity(android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL);
             
             android.widget.LinearLayout.LayoutParams colParams = new android.widget.LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.MATCH_PARENT, 1.0f);
+                     0, ViewGroup.LayoutParams.MATCH_PARENT, 1.0f);
             colLayout.setLayoutParams(colParams);
 
-            // Text hiển thị số tiền rút gọn trên đỉnh cột (Ví dụ: 150K)
+            // Text hiển thị số tiền rút gọn trên đỉnh cột (Ví dụ: 150K, 1.2M)
             TextView tvAmount = new TextView(getContext());
             String shortAmountText;
             if (amount >= 1000000) {
@@ -201,19 +225,19 @@ public class DashboardFragment extends Fragment {
             tvAmount.setLayoutParams(amountParams);
             colLayout.addView(tvAmount);
 
-            // View thể hiện cột màu
+            // View thể hiện cột màu hình chữ nhật bo góc trên
             View barView = new View(getContext());
             android.widget.LinearLayout.LayoutParams barParams = new android.widget.LinearLayout.LayoutParams(
                     barWidthPx, barHeightPx);
             barView.setLayoutParams(barParams);
 
-            // Thiết lập bo góc trên và màu nền cho cột
+            // Thiết lập bo góc trên (6dp) và màu nền cho cột tương ứng danh mục
             android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
             String colorHex = categoryColors.getOrDefault(category, "#2563EB");
             drawable.setColor(android.graphics.Color.parseColor(colorHex));
             drawable.setCornerRadii(new float[]{
-                    Math.round(6 * density), Math.round(6 * density), // top-left bo tròn
-                    Math.round(6 * density), Math.round(6 * density), // top-right bo tròn
+                    Math.round(6 * density), Math.round(6 * density), // top-left
+                    Math.round(6 * density), Math.round(6 * density), // top-right
                     0, 0, // bottom-right
                     0, 0  // bottom-left
             });
@@ -233,10 +257,14 @@ public class DashboardFragment extends Fragment {
             tvCategory.setLayoutParams(categoryParams);
             colLayout.addView(tvCategory);
 
+            // Add cột hoàn thiện vào Container Biểu đồ
             lnChartContainer.addView(colLayout);
         }
     }
 
+    /**
+     * Khởi tạo danh sách dịch vụ mẫu.
+     */
     private List<ServiceItem> getDummyServices() {
         List<ServiceItem> list = new ArrayList<>();
         list.add(new ServiceItem("Drinks", R.drawable.drink_service_icon));

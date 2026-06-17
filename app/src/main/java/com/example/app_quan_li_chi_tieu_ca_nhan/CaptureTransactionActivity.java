@@ -51,6 +51,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * Activity hỗ trợ chụp ảnh hóa đơn/sản phẩm (Camera).
+ * Quy trình xử lý:
+ * 1. Chụp ảnh lưu tạm vào bộ nhớ thiết bị.
+ * 2. Upload ảnh lên hosting ImgBB lấy URL trực tuyến.
+ * 3. Chạy phân loại ảnh bằng mô hình học máy TensorFlow Lite cục bộ để tự động gợi ý danh mục (Food, Drinks, Shopping).
+ * 4. Chạy Transaction trong Firestore để ghi giao dịch đồng thời cập nhật trừ số dư ví.
+ */
 public class CaptureTransactionActivity extends AppCompatActivity {
 
     private static final String TAG = "CaptureTransaction";
@@ -71,6 +79,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
     private static final String IMGBB_API_KEY = "ae3d333d8018f466778a1302f71eb896";
     private com.example.app_quan_li_chi_tieu_ca_nhan.utils.TFLiteClassifier classifier;
 
+    // Bộ yêu cầu cấp quyền chụp ảnh camera từ người dùng
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -81,6 +90,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
                 }
             });
 
+    // Launcher chụp ảnh từ camera hệ thống
     private final ActivityResultLauncher<Uri> takePictureLauncher = registerForActivityResult(
             new ActivityResultContracts.TakePicture(),
             result -> {
@@ -105,6 +115,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
             db = FirebaseFirestore.getInstance();
             mAuth = FirebaseAuth.getInstance();
             
+            // Khởi tạo bộ phân loại TFLite
             try {
                 classifier = new com.example.app_quan_li_chi_tieu_ca_nhan.utils.TFLiteClassifier(this);
             } catch (Exception e) {
@@ -112,6 +123,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
                 Toast.makeText(this, "Không thể khởi động mô hình AI cục bộ: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
 
+            // Ánh xạ UI
             ivCapturedImage = findViewById(R.id.ivCapturedImage);
             cardInput = findViewById(R.id.cardInput);
             fabCapture = findViewById(R.id.fabCapture);
@@ -126,7 +138,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
             if (btnRetake != null) btnRetake.setOnClickListener(v -> checkPermissionAndStartCamera());
             if (btnSave != null) btnSave.setOnClickListener(v -> validateAndSave());
             
-            // Kiểm tra quyền và mở camera sau khi UI đã sẵn sàng
+            // Tự động kiểm tra quyền và mở camera sau khi giao diện đã sẵn sàng
             ivCapturedImage.post(() -> checkPermissionAndStartCamera());
             
         } catch (Exception e) {
@@ -139,11 +151,15 @@ public class CaptureTransactionActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Giải phóng mô hình TFLite tránh rò rỉ bộ nhớ
         if (classifier != null) {
             classifier.close();
         }
     }
 
+    /**
+     * Kiểm tra quyền camera. Nếu đã có thì mở, chưa có thì yêu cầu cấp quyền.
+     */
     private void checkPermissionAndStartCamera() {
         try {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -158,10 +174,14 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Tạo file ảnh tạm và khởi chạy camera hệ thống.
+     */
     private void startCamera() {
         try {
             photoFile = createImageFile();
             if (photoFile != null) {
+                // Tạo Uri an toàn bằng FileProvider tránh FileUriExposedException trên Android 7.0+
                 photoUri = FileProvider.getUriForFile(this,
                         "com.example.app_quan_li_chi_tieu_ca_nhan.fileprovider",
                         photoFile);
@@ -175,6 +195,9 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Tạo file tạm trong thư mục Picture của app.
+     */
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
@@ -185,6 +208,9 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         return File.createTempFile(imageFileName, ".jpg", storageDir);
     }
 
+    /**
+     * Cập nhật UI hiển thị ảnh chụp được và hiện form nhập tên/số tiền.
+     */
     private void showCapturedImage() {
         ivCapturedImage.setImageURI(photoUri);
         cardInput.setVisibility(View.VISIBLE);
@@ -193,6 +219,9 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         btnRetake.setVisibility(View.VISIBLE);
     }
 
+    /**
+     * Kiểm tra dữ liệu người dùng nhập trước khi thực hiện tải ảnh.
+     */
     private void validateAndSave() {
         String title = etTitle.getText().toString().trim();
         String amountStr = etAmount.getText().toString().trim();
@@ -214,13 +243,16 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Chạy luồng phụ để nén, xử lý xoay ảnh và upload lên ImgBB bằng Retrofit.
+     */
     private void uploadImageToImgBB(String title, double amount) {
-
         progressBar.setVisibility(View.VISIBLE);
         btnSave.setEnabled(false);
 
         new Thread(() -> {
             try {
+                // Xử lý nén ảnh trong Background Thread tránh đơ Main Thread UI
                 byte[] data = processImage(photoUri);
                 runOnUiThread(() -> {
                     RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), data);
@@ -231,7 +263,7 @@ public class CaptureTransactionActivity extends AppCompatActivity {
                         public void onResponse(Call<ImgBBResponse> call, Response<ImgBBResponse> response) {
                             if (response.isSuccessful() && response.body() != null) {
                                 uploadedImageUrl = response.body().getData().getUrl();
-                                // Sau khi upload ImgBB, tiếp tục gửi file ảnh sang API Labeling để phân loại
+                                // Sau khi upload lấy URL thành công, chạy mô hình AI nhận diện danh mục rồi lưu
                                 getAutoCategoryAndSave(title, amount, data);
                             } else {
                                 handleError("Lỗi upload ảnh: " + response.code());
@@ -250,10 +282,13 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         }).start();
     }
 
+    /**
+     * Dùng bộ phân loại TFLiteClassifier phân tích hình ảnh để đề xuất danh mục chi tiêu, sau đó lưu giao dịch.
+     */
     private void getAutoCategoryAndSave(String title, double amount, byte[] imageData) {
         Log.d(TAG, "Đang sử dụng mô hình TFLite cục bộ để phân loại...");
         
-        String category = "Chụp ảnh";
+        String category = "Chụp ảnh"; // Danh mục mặc định nếu AI không nhận diện được
         if (classifier != null) {
             try {
                 // Giải mã mảng byte thành Bitmap
@@ -274,20 +309,26 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         saveToFirestore(title, amount, category);
     }
 
+    /**
+     * Đọc ảnh từ URI, xoay ảnh đúng chiều EXIF, nén ảnh 70% lấy mảng bytes.
+     */
     private byte[] processImage(Uri uri) throws Exception {
         InputStream is = getContentResolver().openInputStream(uri);
         Bitmap bitmap = BitmapFactory.decodeStream(is);
         is.close();
 
-        // Xoay ảnh nếu cần
+        // Xoay ảnh về đúng chiều gốc
         bitmap = rotateImageIfRequired(bitmap, uri);
 
-        // Nén
+        // Nén ảnh chất lượng 70
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
         return baos.toByteArray();
     }
 
+    /**
+     * Kiểm tra và xoay ảnh dựa theo thuộc tính EXIF (tránh ảnh bị xoay ngang khi chụp bằng một số camera).
+     */
     private Bitmap rotateImageIfRequired(Bitmap img, Uri selectedImage) throws Exception {
         InputStream input = getContentResolver().openInputStream(selectedImage);
         ExifInterface ei = new ExifInterface(input);
@@ -308,6 +349,11 @@ public class CaptureTransactionActivity extends AppCompatActivity {
         return Bitmap.createBitmap(img, 0, 0, img.getWidth(), img.getHeight(), matrix, true);
     }
 
+    /**
+     * Ghi thông tin giao dịch vào Firestore trong 1 Transaction để đảm bảo tính toàn vẹn:
+     * - Tạo tài liệu giao dịch mới trong 'transactions'.
+     * - Cập nhật giảm trừ số dư ví người dùng tương ứng số tiền trong 'balances'.
+     */
     private void saveToFirestore(String title, double amount, String categoryName) {
         String userId = mAuth.getUid();
         if (userId == null) {
@@ -327,17 +373,19 @@ public class CaptureTransactionActivity extends AppCompatActivity {
             data.put("imageUrl", uploadedImageUrl);
             data.put("timestamp", System.currentTimeMillis());
             data.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
-            data.put("isExpense", true);
+            data.put("isExpense", true); // Mặc định qua quét ảnh là chi tiêu
 
-            // Thực hiện đọc dữ liệu (READ) trước khi ghi dữ liệu (WRITE)
+            // Đọc dữ liệu số dư hiện tại
             com.google.firebase.firestore.DocumentSnapshot balanceSnapshot = transaction.get(balanceRef);
 
+            // Ghi dữ liệu giao dịch
             transaction.set(txRef, data);
             
             if (balanceSnapshot.exists()) {
+                // Trừ số dư
                 transaction.update(balanceRef, "currentBalance", FieldValue.increment(-amount));
             } else {
-                // Nếu chưa có balance, tạo mới
+                // Nếu chưa có balance, tạo mới số dư âm
                 Map<String, Object> initialBalance = new HashMap<>();
                 initialBalance.put("userId", userId);
                 initialBalance.put("currentBalance", -amount);

@@ -51,6 +51,11 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * Activity cho phép thêm mới giao dịch chi tiêu một cách thủ công.
+ * Hỗ trợ chọn danh mục (Drinks, Food, Shopping), chọn ảnh minh họa giao dịch từ máy,
+ * nén ảnh để tránh tràn RAM, tải ảnh lên ImgBB và lưu giao dịch vào Firestore (đồng bộ giảm số dư ví).
+ */
 public class AddActivity extends AppCompatActivity {
 
     private EditText edtTitle, edtAmount, edtDate;
@@ -63,17 +68,18 @@ public class AddActivity extends AppCompatActivity {
     private Uri selectedImageUri;
     private String uploadedImageUrl = null;
     
-    // TODO: Thay thế bằng API Key ImgBB của bạn (Lấy tại https://api.imgbb.com/)
+    // Khóa API mặc định để upload ảnh lên ImgBB
     private static final String IMGBB_API_KEY = "ae3d333d8018f466778a1302f71eb896";
 
+    // Launcher mở trình chọn hình ảnh từ bộ nhớ thiết bị
     private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             uri -> {
                 if (uri != null) {
                     selectedImageUri = uri;
                     ivTransactionImage.setImageURI(uri);
-                    ivTransactionImage.setPadding(0, 0, 0, 0); // Remove padding when image is shown
-                    ivTransactionImage.setImageTintList(null); // Remove tint
+                    ivTransactionImage.setPadding(0, 0, 0, 0); // Bỏ padding khi đã hiển thị ảnh
+                    ivTransactionImage.setImageTintList(null); // Bỏ màu phủ tint
                 }
             }
     );
@@ -91,31 +97,36 @@ public class AddActivity extends AppCompatActivity {
         edtAmount = findViewById(R.id.edtAmount);
         edtDate = findViewById(R.id.edtDate);
         
-        // Gán ngày hiện tại làm mặc định
+        // Mặc định điền ngày hiện tại dưới dạng dd/MM/yyyy
         String currentDate = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
         edtDate.setText(currentDate);
         chipCategories = findViewById(R.id.chipCategories);
         ivTransactionImage = findViewById(R.id.ivTransactionImage);
         imageUploadProgressBar = findViewById(R.id.imageUploadProgressBar);
 
+        // Thiết lập sự kiện chọn hình ảnh khi click vào CardAddImage
         findViewById(R.id.cardAddImage).setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
+        
+        // Cho phép nhấn giữ để gỡ bỏ ảnh đã chọn
         findViewById(R.id.cardAddImage).setOnLongClickListener(v -> {
             if (selectedImageUri != null) {
                 selectedImageUri = null;
                 ivTransactionImage.setImageResource(android.R.drawable.ic_menu_camera);
-                ivTransactionImage.setPadding(32, 32, 32, 32); // Restore padding
-                ivTransactionImage.setImageTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#64748B"))); // Restore tint
+                ivTransactionImage.setPadding(32, 32, 32, 32); // Phục hồi padding cho icon camera
+                ivTransactionImage.setImageTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#64748B"))); // Phục hồi tint màu
                 Toast.makeText(this, "Đã gỡ ảnh", Toast.LENGTH_SHORT).show();
                 return true;
             }
             return false;
         });
 
+        // Nếu được mở kèm tên danh mục truyền từ Intent (ví dụ: nhấn từ Grid Trang chủ)
         String categoryName = getIntent().getStringExtra("categoryName");
         if (categoryName != null) {
             selectChipByCategory(categoryName);
         }
 
+        // Đảm bảo không bị che khuất bởi system navigation bar
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.addRoot), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(
@@ -127,6 +138,7 @@ public class AddActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Xử lý sự kiện nhấn nút Lưu giao dịch
         findViewById(R.id.btnSave).setOnClickListener(v -> {
             String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
             if (userId == null) {
@@ -134,6 +146,7 @@ public class AddActivity extends AppCompatActivity {
                 return;
             }
 
+            // Nếu người dùng có chọn ảnh minh họa, upload trước rồi mới lưu giao dịch
             if (selectedImageUri != null) {
                 uploadImageAndSaveTransaction(userId);
             } else {
@@ -142,27 +155,29 @@ public class AddActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Nén ảnh thông minh theo tỉ lệ và gửi request upload lên ImgBB.
+     */
     private void uploadImageAndSaveTransaction(String userId) {
         findViewById(R.id.btnSave).setEnabled(false);
         imageUploadProgressBar.setVisibility(View.VISIBLE);
         
         new Thread(() -> {
             try {
-                // 1. Lấy kích thước ảnh trước khi decode để tránh tốn RAM
+                // 1. Lấy kích thước ảnh trước khi decode thật để tránh lãng phí RAM
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 InputStream isSize = getContentResolver().openInputStream(selectedImageUri);
                 BitmapFactory.decodeStream(isSize, null, options);
                 isSize.close();
 
-                // 2. Tính toán tỷ lệ nén (Scale) để không vượt quá giới hạn bộ nhớ
-                // Mục tiêu: Giảm kích thước xuống khoảng 1500-2000px là đủ cho hóa đơn
+                // 2. Tính toán tỷ lệ nén (Scale) để ảnh không vượt quá khoảng 1500px tránh lỗi tràn bộ nhớ (Out of Memory)
                 int reqWidth = 1500;
                 int reqHeight = 1500;
                 options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
                 options.inJustDecodeBounds = false;
 
-                // 3. Decode ảnh thật với tỷ lệ đã tính
+                // 3. Tiến hành giải mã (decode) ảnh thật dựa trên tỷ lệ nén vừa tính
                 InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream, null, options);
                 inputStream.close();
@@ -171,16 +186,18 @@ public class AddActivity extends AppCompatActivity {
                     throw new Exception("Không thể đọc dữ liệu ảnh");
                 }
 
-                // 4. Xử lý xoay ảnh dựa trên EXIF
+                // 4. Kiểm tra góc xoay EXIF để xoay ảnh về đúng chiều
                 bitmap = rotateImageIfRequired(bitmap, selectedImageUri);
                 
                 Log.d("AddActivity", "Ảnh gốc: " + options.outWidth + "x" + options.outHeight + " -> Đã xử lý: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
+                // Nén ảnh chất lượng JPEG 70%
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
                 byte[] data = baos.toByteArray();
-                bitmap.recycle();
+                bitmap.recycle(); // Thu hồi vùng nhớ của bitmap ngay lập tức
 
+                // Chạy hàm upload trên UI Thread (Retrofit gọi bất đồng bộ)
                 runOnUiThread(() -> performImgBBUpload(data));
 
             } catch (Exception e) {
@@ -194,7 +211,9 @@ public class AddActivity extends AppCompatActivity {
         }).start();
     }
 
-    // Hàm xoay ảnh dựa trên thông tin EXIF
+    /**
+     * Kiểm tra góc quay EXIF của tệp ảnh để tránh ảnh bị quay ngược khi hiển thị.
+     */
     private Bitmap rotateImageIfRequired(Bitmap img, Uri selectedImage) throws Exception {
         InputStream input = getContentResolver().openInputStream(selectedImage);
         ExifInterface ei;
@@ -226,7 +245,9 @@ public class AddActivity extends AppCompatActivity {
         return rotatedImg;
     }
 
-    // Hàm tính toán tỷ lệ giảm kích thước ảnh
+    /**
+     * Tính kích thước nén (inSampleSize) tối ưu cho hình ảnh đầu vào.
+     */
     private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -242,9 +263,11 @@ public class AddActivity extends AppCompatActivity {
         return inSampleSize;
     }
 
+    /**
+     * Tiến hành gửi Multipart request upload hình ảnh đã nén lên máy chủ ImgBB.
+     */
     private void performImgBBUpload(byte[] data) {
         try {
-            // Tạo RequestBody cho Retrofit
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), data);
             MultipartBody.Part body = MultipartBody.Part.createFormData("image", "transaction.jpg", requestFile);
 
@@ -259,6 +282,7 @@ public class AddActivity extends AppCompatActivity {
                         if (response.body().getData() != null) {
                             uploadedImageUrl = response.body().getData().getUrl();
                             Log.d("AddActivity", "Upload ImgBB thành công: " + uploadedImageUrl);
+                            // Lưu giao dịch vào Firestore sau khi upload ảnh thành công
                             saveTransaction();
                         } else {
                             handleUploadError("Lỗi dữ liệu: ImgBB không trả về link ảnh");
@@ -288,6 +312,10 @@ public class AddActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Thực hiện Lưu giao dịch chi tiêu vào cơ sở dữ liệu Firestore trong một Transaction an toàn.
+     * Transaction đảm bảo ghi giao dịch mới đồng thời giảm số dư ví thành công, nếu 1 trong 2 lỗi thì rollback.
+     */
     private void saveTransaction() {
         String title = edtTitle.getText().toString().trim();
         String amountStr = edtAmount.getText().toString().trim();
@@ -324,6 +352,7 @@ public class AddActivity extends AppCompatActivity {
         findViewById(R.id.btnSave).setEnabled(false);
         Toast.makeText(this, "Đang lưu giao dịch...", Toast.LENGTH_SHORT).show();
 
+        // Khởi chạy Transaction Firestore
         db.runTransaction(transaction -> {
             DocumentReference balanceRef = db.collection("balances").document(userId);
             DocumentReference newTransactionRef = db.collection("transactions").document();
@@ -335,12 +364,14 @@ public class AddActivity extends AppCompatActivity {
             txData.put("amount", amount);
             txData.put("date", date);
             txData.put("timestamp", System.currentTimeMillis());
-            txData.put("isExpense", true);
+            txData.put("isExpense", true); // Mặc định ở đây luôn là khoản chi tiêu
             if (uploadedImageUrl != null) {
                 txData.put("imageUrl", uploadedImageUrl);
             }
 
+            // Ghi dữ liệu giao dịch
             transaction.set(newTransactionRef, txData);
+            // Cập nhật số dư (Trừ tiền) ví điện tử
             transaction.update(balanceRef, "currentBalance", FieldValue.increment(-amount));
             transaction.update(balanceRef, "lastUpdated", System.currentTimeMillis());
 
@@ -350,6 +381,7 @@ public class AddActivity extends AppCompatActivity {
             finish();
         }).addOnFailureListener(e -> {
             findViewById(R.id.btnSave).setEnabled(true);
+            // Nếu tài liệu số dư 'balance' chưa được khởi tạo cho tài khoản này
             if (e.getMessage() != null && e.getMessage().contains("NOT_FOUND")) {
                 initializeBalanceAndRetry(userId, title, category, amount, date);
             } else {
@@ -358,6 +390,9 @@ public class AddActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Khởi tạo tài liệu balances cho người dùng mới và thử lưu lại giao dịch.
+     */
     private void initializeBalanceAndRetry(String userId, String title, String category, double amount, String date) {
         Map<String, Object> initialBalance = new HashMap<>();
         initialBalance.put("userId", userId);
@@ -374,6 +409,9 @@ public class AddActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Tự động tick chọn Chip tương ứng với danh mục truyền vào.
+     */
     private void selectChipByCategory(String categoryName) {
         for (int i = 0; i < chipCategories.getChildCount(); i++) {
             View child = chipCategories.getChildAt(i);
